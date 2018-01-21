@@ -3050,7 +3050,7 @@ func (s *Store) HandleRaftUncoalescedRequest(
 	})
 	q.Unlock()
 
-	s.scheduler.EnqueueRaftRequest(req.RangeID)
+	s.scheduler.EnqueueRaftRequest(req.RangeID) //DHQ: Enquue到 scheduler的queue，让它处理
 	return nil
 }
 
@@ -3824,12 +3824,12 @@ func (s *Store) processTick(ctx context.Context, rangeID roachpb.RangeID) bool {
 	return exists // ready
 }
 
-func (s *Store) processRaft(ctx context.Context) {
+func (s *Store) processRaft(ctx context.Context) { //DHQ: scheduler启动所有Worker的地方，包括TickLoop, Hearbeats等
 	if s.cfg.TestingKnobs.DisableProcessRaft {
 		return
 	}
 
-	s.scheduler.Start(ctx, s.stopper)
+	s.scheduler.Start(ctx, s.stopper)//DHQ: 这里面会启动多个worker
 	// Wait for the scheduler worker goroutines to finish.
 	s.stopper.RunWorker(ctx, s.scheduler.Wait)
 
@@ -3840,7 +3840,7 @@ func (s *Store) processRaft(ctx context.Context) {
 	}))
 }
 
-func (s *Store) raftTickLoop(ctx context.Context) {
+func (s *Store) raftTickLoop(ctx context.Context) {//DHQ: 这个是触发 Tick的loop，否则 scheduler的queue里面没有待处理的tick
 	ticker := time.NewTicker(s.cfg.RaftTickInterval)
 	defer ticker.Stop()
 

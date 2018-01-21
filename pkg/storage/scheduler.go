@@ -161,7 +161,7 @@ func (s *raftScheduler) Start(ctx context.Context, stopper *stop.Stopper) {
 	})
 
 	s.done.Add(s.numWorkers)
-	for i := 0; i < s.numWorkers; i++ {
+	for i := 0; i < s.numWorkers; i++ {//DHQ: 有多少个worker?
 		stopper.RunWorker(ctx, func(ctx context.Context) {
 			s.worker(ctx)
 		})

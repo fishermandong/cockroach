@@ -3812,7 +3812,7 @@ func (r *Replica) tick() (bool, error) {
 	}
 
 	r.mu.ticks++
-	r.mu.internalRaftGroup.Tick()
+	r.mu.internalRaftGroup.Tick()//DHQ: 主要是调用RawNode的Tick，然后调用raft的tick, 内部就决定是否要发送消息之类的.生成的消息，可以通过RawNode的Ready()函数拿到, 作为ready动作处理
 	if !r.store.TestingKnobs().DisableRefreshReasonTicks &&
 		r.mu.ticks%r.store.cfg.RaftElectionTimeoutTicks == 0 {
 		// RaftElectionTimeoutTicks is a reasonable approximation of how long we
