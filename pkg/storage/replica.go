@@ -3135,7 +3135,7 @@ func (r *Replica) propose(
 	}
 
 	if err := r.submitProposalLocked(proposal); err != nil { //DHQ: will call raft's propose and enqueue region to scheduler's queue
-		delete(r.mu.proposals, proposal.idKey)
+		delete(r.mu.proposals, proposal.idKey)//DHQ: enqueue是为了让scheduler的worker能被唤醒，知道有工作处理.
 		return nil, nil, undoQuotaAcquisition, roachpb.NewError(err)
 	}
 	// Must not use `proposal` in the closure below as a proposal which is not
