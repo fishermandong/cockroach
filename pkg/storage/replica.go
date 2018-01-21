@@ -3134,7 +3134,7 @@ func (r *Replica) propose(
 		}
 	}
 
-	if err := r.submitProposalLocked(proposal); err != nil {
+	if err := r.submitProposalLocked(proposal); err != nil { //DHQ: will call raft's propose and enqueue region to scheduler's queue
 		delete(r.mu.proposals, proposal.idKey)
 		return nil, nil, undoQuotaAcquisition, roachpb.NewError(err)
 	}
@@ -3181,7 +3181,7 @@ func defaultSubmitProposalLocked(r *Replica, p *ProposalData) error {
 	if err != nil {
 		return err
 	}
-	defer r.store.enqueueRaftUpdateCheck(r.RangeID)
+	defer r.store.enqueueRaftUpdateCheck(r.RangeID) //DHQ: will do an enqueue  after 
 
 	// Too verbose even for verbose logging, so manually enable if you want to
 	// debug proposal sizes.
@@ -3836,7 +3836,7 @@ func (r *Replica) maybeTickQuiesced() bool {
 	r.mu.Lock()
 	if r.mu.internalRaftGroup == nil {
 		done = true
-	} else if r.mu.quiescent {
+	} else if r.mu.quiescent {//DHQ: 这个是raft进程间的协议，我么应该也可以quiescent。PD的交互不好改。
 		done = true
 		if !enablePreVote {
 			// NB: It is safe to call TickQuiesced without holding Replica.raftMu

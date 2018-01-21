@@ -3841,7 +3841,7 @@ func (s *Store) processRaft(ctx context.Context) { //DHQ: scheduler启动所有W
 }
 
 func (s *Store) raftTickLoop(ctx context.Context) {//DHQ: 这个是触发 Tick的loop，否则 scheduler的queue里面没有待处理的tick
-	ticker := time.NewTicker(s.cfg.RaftTickInterval)
+	ticker := time.NewTicker(s.cfg.RaftTickInterval) //DHQ：这就是个timer，定时向 ticker.C发消息
 	defer ticker.Stop()
 
 	var rangeIDs []roachpb.RangeID
