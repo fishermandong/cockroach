@@ -303,7 +303,7 @@ type Replica struct {
 
 		// Note that there are two StateLoaders, in raftMu and mu,
 		// depending on which lock is being held.
-		stateLoader stateloader.StateLoader
+		stateLoader stateloader.StateLoader //DHQ: 为什么两个stateLoader? 分别load什么? 后面说根据lock不同，莫非是一个功能，只是看持有哪个锁，然后调用哪个？
 		// on-disk storage for sideloaded SSTables. nil when there's no ReplicaID.
 		sideloaded sideloadStorage
 	}
@@ -343,7 +343,7 @@ type Replica struct {
 		// lastIndex is known, in which case the term will have to be retrieved
 		// from the Raft log entry. Use the invalidLastTerm constant for this
 		// case.
-		lastIndex, lastTerm uint64
+		lastIndex, lastTerm uint64 //DHQ: lastTerm对应啥？ 上次append的log的term?
 		// The most recent commit index seen in a message from the leader. Used by
 		// the follower to estimate the number of Raft log entries it is
 		// behind. This field is only valid when the Replica is a follower.
@@ -1879,7 +1879,7 @@ func (r *Replica) maybeInitializeRaftGroup(ctx context.Context) {
 // Send executes a command on this range, dispatching it to the
 // read-only, read-write, or admin execution path as appropriate.
 // ctx should contain the log tags from the store (and up).
-func (r *Replica) Send(
+func (r *Replica) Send(//DHQ: 这不仅是发送消息，执行的 executeWriteBatch 等可能引起等待 doneCh上的消息
 	ctx context.Context, ba roachpb.BatchRequest,
 ) (*roachpb.BatchResponse, *roachpb.Error) {
 	var br *roachpb.BatchResponse
@@ -3135,7 +3135,7 @@ func (r *Replica) propose(
 	}
 
 	if err := r.submitProposalLocked(proposal); err != nil { //DHQ: will call raft's propose and enqueue region to scheduler's queue
-		delete(r.mu.proposals, proposal.idKey)//DHQ: enqueue是为了让scheduler的worker能被唤醒，知道有工作处理.
+		delete(r.mu.proposals, proposal.idKey:
 		return nil, nil, undoQuotaAcquisition, roachpb.NewError(err)
 	}
 	// Must not use `proposal` in the closure below as a proposal which is not
@@ -3157,7 +3157,7 @@ func (r *Replica) propose(
 		r.mu.Unlock()
 		return ok
 	}
-	return proposal.doneCh, tryAbandon, undoQuotaAcquisition, nil
+	return proposal.doneCh, tryAbandon, undoQuotaAcquisition, nil //DHQ: 有个doneCh，应该是proposal done时触发
 }
 
 // submitProposalLocked proposes or re-proposes a command in r.mu.proposals.
@@ -3530,7 +3530,7 @@ func (r *Replica) handleRaftReadyRaftMuLocked(
 
 	// We know that all of the writes from here forward will be to distinct keys.
 	writer := batch.Distinct()
-	prevLastIndex := lastIndex
+	prevLastIndex := lastIndex //DHQ: 这个对应论文中的 prevLogIndex?
 	if len(rd.Entries) > 0 {
 		// All of the entries are appended to distinct keys, returning a new
 		// last index.
@@ -3540,7 +3540,7 @@ func (r *Replica) handleRaftReadyRaftMuLocked(
 			return stats, expl, errors.Wrap(err, expl)
 		}
 		raftLogSize += sideLoadedEntriesSize
-		if lastIndex, lastTerm, raftLogSize, err = r.append(
+		if lastIndex, lastTerm, raftLogSize, err = r.append(//DHQ: append在 replica_raftstoragee.go中定义. 按照前面大段注视，这个就是appen log entries
 			ctx, writer, lastIndex, lastTerm, raftLogSize, thinEntries,
 		); err != nil {
 			const expl = "during append"
@@ -3745,7 +3745,7 @@ func (r *Replica) handleRaftReadyRaftMuLocked(
 func splitMsgApps(msgs []raftpb.Message) (mgsApps, otherMsgs []raftpb.Message) {
 	splitIdx := 0
 	for i, msg := range msgs {
-		if msg.Type == raftpb.MsgApp {
+		if msg.Type == raftpb.MsgApp {//DHQ: 从定义看，也就是MsgApp和 MsgAppResp?
 			msgs[i], msgs[splitIdx] = msgs[splitIdx], msgs[i]
 			splitIdx++
 		}

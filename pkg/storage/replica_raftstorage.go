@@ -294,7 +294,7 @@ func term(
 
 // LastIndex implements the raft.Storage interface.
 func (r *replicaRaftStorage) LastIndex() (uint64, error) {
-	return r.mu.lastIndex, nil
+	return r.mu.lastIndex, nil //DHQ: 更新时机？
 }
 
 // raftLastIndexLocked requires that r.mu is held.
@@ -566,7 +566,7 @@ func snapshot(
 // append is intentionally oblivious to the existence of sideloaded proposals.
 // They are managed by the caller, including cleaning up obsolete on-disk
 // payloads in case the log tail is replaced.
-func (r *Replica) append(
+func (r *Replica) append( //DHQ: 这个是对应paper中的 AppendEntries 的一个处理么？
 	ctx context.Context,
 	batch engine.ReadWriter,
 	prevLastIndex uint64,
@@ -589,7 +589,7 @@ func (r *Replica) append(
 		value.InitChecksum(key)
 		var err error
 		if ent.Index > prevLastIndex {
-			err = engine.MVCCBlindPut(ctx, batch, &diff, key, hlc.Timestamp{}, value, nil /* txn */)
+			err = engine.MVCCBlindPut(ctx, batch, &diff, key, hlc.Timestamp{}, value, nil /* txn */)//DHQ: 这个是啥？BlindPut
 		} else {
 			err = engine.MVCCPut(ctx, batch, &diff, key, hlc.Timestamp{}, value, nil /* txn */)
 		}
