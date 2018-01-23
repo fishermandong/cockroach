@@ -295,7 +295,7 @@ type Replica struct {
 
 	// raftMu protects Raft processing the replica.
 	//
-	// Locking notes: Replica.raftMu < Replica.mu
+	// Locking notes: Replica.raftMu < Replica.mu  DHQ: raftMu的lock先获取，例子里面都是这个顺序
 	//
 	// TODO(peter): evaluate runtime overhead of the timed mutex.
 	raftMu struct {
@@ -680,7 +680,7 @@ func (r *Replica) init(
 	return r.initRaftMuLockedReplicaMuLocked(desc, clock, replicaID)
 }
 
-func (r *Replica) initRaftMuLockedReplicaMuLocked(
+func (r *Replica) initRaftMuLockedReplicaMuLocked(//DHQ: RaftMu lock and Mu lock
 	desc *roachpb.RangeDescriptor, clock *hlc.Clock, replicaID roachpb.ReplicaID,
 ) error {
 	ctx := r.AnnotateCtx(context.TODO())
@@ -839,7 +839,7 @@ func (r *Replica) cancelPendingCommandsLocked() {
 	}
 	r.mu.proposals = map[storagebase.CmdIDKey]*ProposalData{}
 }
-
+//DHQ: 对于有PD集中管理的场景，没有必要自己管理tombstone
 // setTombstoneKey writes a tombstone to disk to ensure that replica IDs never
 // get reused. It determines what the minimum next replica ID can be using
 // the provided RangeDescriptor and the Replica's own ID.
@@ -3540,7 +3540,7 @@ func (r *Replica) handleRaftReadyRaftMuLocked(
 			return stats, expl, errors.Wrap(err, expl)
 		}
 		raftLogSize += sideLoadedEntriesSize
-		if lastIndex, lastTerm, raftLogSize, err = r.append(//DHQ: append在 replica_raftstoragee.go中定义. 按照前面大段注视，这个就是appen log entries
+		if lastIndex, lastTerm, raftLogSize, err = r.append(//DHQ: append在 replica_raftstorage.go中定义. 按照前面大段注视，这个就是appen log entries
 			ctx, writer, lastIndex, lastTerm, raftLogSize, thinEntries,
 		); err != nil {
 			const expl = "during append"
@@ -3609,7 +3609,7 @@ func (r *Replica) handleRaftReadyRaftMuLocked(
 
 	r.sendRaftMessages(ctx, otherMsgs)
 
-	for _, e := range rd.CommittedEntries {
+	for _, e := range rd.CommittedEntries {//DHQ: 这是从CommittedEntries里面取的，都是要apply的
 		switch e.Type {
 		case raftpb.EntryNormal:
 			// Committed entries come straight from the Raft log. Consequently,
@@ -3692,7 +3692,7 @@ func (r *Replica) handleRaftReadyRaftMuLocked(
 				return stats, expl, errors.Wrap(err, expl)
 			}
 			commandID := storagebase.CmdIDKey(ccCtx.CommandID)
-			if changedRepl := r.processRaftCommand(
+			if changedRepl := r.processRaftCommand(//DHQ: 这里是要去apply了，不是取propose
 				ctx, commandID, e.Term, e.Index, command,
 			); !changedRepl {
 				// If we did not apply the config change, tell raft that the config change was aborted.
@@ -3777,7 +3777,7 @@ func (r *Replica) tick() (bool, error) {
 		return false, nil
 	}
 
-	for remoteReplica := range remotes {
+	for remoteReplica := range remotes { //DHQ: remotes在前面已经赋值为 unreachablesMu.remotes，不是盲目报告
 		r.mu.internalRaftGroup.ReportUnreachable(uint64(remoteReplica))
 	}
 
@@ -4408,7 +4408,7 @@ func (r *Replica) reportSnapshotStatus(ctx context.Context, to roachpb.ReplicaID
 	}
 
 	if err := r.withRaftGroup(func(raftGroup *raft.RawNode) (bool, error) {
-		raftGroup.ReportSnapshot(uint64(to), snapStatus)
+		raftGroup.ReportSnapshot(uint64(to), snapStatus) //DHQ: snapshot状态是需要报告的
 		return true, nil
 	}); err != nil {
 		log.Fatal(ctx, err)

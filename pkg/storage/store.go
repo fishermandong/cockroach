@@ -3594,7 +3594,7 @@ func sendSnapshot(
 	}
 
 	rangeID := header.State.Desc.RangeID
-
+        //DHQ: iterate，获取kv
 	if err := iterateEntries(ctx, snap.EngineSnap, rangeID, firstIndex, endIndex, scanFunc); err != nil {
 		return err
 	}

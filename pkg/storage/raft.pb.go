@@ -146,7 +146,7 @@ type RaftMessageRequest struct {
 	// quiescent. If they don't match, the message is passed along to
 	// Raft which will generate a MsgHeartbeatResp that will unquiesce
 	// the sender.
-	Quiesce bool `protobuf:"varint,5,opt,name=quiesce" json:"quiesce"`
+	Quiesce bool `protobuf:"varint,5,opt,name=quiesce" json:"quiesce"` //DHQ: Quiesce的注视，比较清楚
 	// A coalesced heartbeat request is any RaftMessageRequest with a nonzero number of
 	// heartbeats or heartbeat_resps.
 	Heartbeats     []RaftHeartbeat `protobuf:"bytes,6,rep,name=heartbeats" json:"heartbeats"`

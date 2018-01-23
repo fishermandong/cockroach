@@ -1855,7 +1855,7 @@ func (r *Replica) sendSnapshot(
 		return errors.New("raft status not initialized")
 	}
 
-	req := SnapshotRequest_Header{
+	req := SnapshotRequest_Header{ //DHQ: req Header
 		State: snap.State,
 		RaftMessageRequest: RaftMessageRequest{
 			RangeID:     r.RangeID,
@@ -1877,7 +1877,7 @@ func (r *Replica) sendSnapshot(
 	sent := func() {
 		r.store.metrics.RangeSnapshotsGenerated.Inc(1)
 	}
-	if err := r.store.cfg.Transport.SendSnapshot(
+	if err := r.store.cfg.Transport.SendSnapshot(//DHQ: 参数中带有Engine().NewBatch，应该是获得各个key的
 		ctx, r.store.allocator.storePool, req, snap, r.store.Engine().NewBatch, sent); err != nil {
 		return &snapshotError{err}
 	}
