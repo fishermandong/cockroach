@@ -3028,7 +3028,7 @@ func (s *Store) HandleRaftUncoalescedRequest(
 	s.metrics.raftRcvdMessages[req.Message.Type].Inc(1)
 
 	if respStream == nil {
-		return s.processRaftRequestAndReady(ctx, req)
+		return s.processRaftRequestAndReady(ctx, req) //DHQ: 没有 respStream，直接处理？函数 comment说是非snapshot请求。估计是因为snapshot可能执行很久
 	}
 
 	value, ok := s.replicaQueues.Load(int64(req.RangeID))
@@ -3043,7 +3043,7 @@ func (s *Store) HandleRaftUncoalescedRequest(
 		// that dropping the request is safe. Raft will retry.
 		s.metrics.RaftRcvdMsgDropped.Inc(1)
 		return nil
-	}
+	}//DHQ: q.infos，应该是一个range的许多request，不是一个。下面enqueue的是个RangeID，不是单个Req
 	q.infos = append(q.infos, raftRequestInfo{
 		req:        req,
 		respStream: respStream,
@@ -3082,7 +3082,7 @@ func (s *Store) processRaftRequestAndReady(
 	ctx context.Context, req *RaftMessageRequest,
 ) *roachpb.Error {
 	return s.withReplicaForRequest(ctx, req, func(ctx context.Context, r *Replica) *roachpb.Error {
-		if pErr := s.processRaftRequestWithReplica(ctx, r, req); pErr != nil {
+		if pErr := s.processRaftRequestWithReplica(ctx, r, req); pErr != nil {//DHQ: 先处理request，然后处理Ready
 			return pErr
 		}
 
@@ -3127,7 +3127,7 @@ func (s *Store) processRaftRequestWithReplica(
 		)
 	}
 
-	if err := r.stepRaftGroup(req); err != nil {
+	if err := r.stepRaftGroup(req); err != nil {//DHQ: 在processRaftRequestWithReplica调用step，里面调用RawNode的Step。这个在Ready处理之前
 		return roachpb.NewError(err)
 	}
 	return nil
@@ -3725,7 +3725,7 @@ func (s *Store) processRequestQueue(ctx context.Context, rangeID roachpb.RangeID
 				// so we can handle the Raft Ready state all at once.
 				lastRepl = r
 				pErr := s.processRaftRequestWithReplica(ctx, r, info.req)
-				if last {
+				if last {//DHQ: 到了last，集中处理Ready。
 					// If this is the last request, we can handle raft.Ready without
 					// giving up the lock. Set lastRepl to nil, so we don't handle it
 					// down below as well.
