@@ -3136,7 +3136,7 @@ func (s *Store) processRaftRequestWithReplica(
 // processRaftSnapshotRequest processes the incoming snapshot Raft request on
 // the request's specified replica. This snapshot can be preemptive or not. If
 // not, the function makes sure to handle any updated Raft Ready state.
-func (s *Store) processRaftSnapshotRequest(
+func (s *Store) processRaftSnapshotRequest(//DHQ: 这个应该是生成Snapshot?
 	ctx context.Context, req *RaftMessageRequest, inSnap IncomingSnapshot,
 ) *roachpb.Error {
 	return s.withReplicaForRequest(ctx, req, func(
