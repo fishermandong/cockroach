@@ -3850,7 +3850,7 @@ func (s *Store) raftTickLoop(ctx context.Context) {//DHQ: 这个是触发 Tick�
 		select {
 		case <-ticker.C:
 			rangeIDs = rangeIDs[:0]
-
+			//DHQ: 下面有注释，仅仅那些真的需要Tick的group，才EnqueueRaftTick,这样可以避免每个replica都不断被检查是否ready.
 			s.mu.replicas.Range(func(k int64, v unsafe.Pointer) bool {
 				// Fast-path handling of quiesced replicas. This avoids the overhead of
 				// queueing the replica on the Raft scheduler. This overhead is

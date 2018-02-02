@@ -697,7 +697,7 @@ func runCommitTrigger(
 }
 
 // AdminSplit divides the range into into two ranges using args.SplitKey.
-func (r *Replica) AdminSplit(
+func (r *Replica) AdminSplit(//DHQ: split的入口
 	ctx context.Context, args roachpb.AdminSplitRequest,
 ) (roachpb.AdminSplitResponse, *roachpb.Error) {
 	if len(args.SplitKey) == 0 {

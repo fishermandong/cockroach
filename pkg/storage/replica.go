@@ -3280,7 +3280,7 @@ func (r *Replica) quiesce() bool {
 
 func (r *Replica) quiesceLocked() bool {
 	ctx := r.AnnotateCtx(context.TODO())
-	if len(r.mu.proposals) != 0 {
+	if len(r.mu.proposals) != 0 {//DHQ: 这个 proposals跟quiesce有啥关系？
 		log.Infof(ctx, "not quiescing: %d pending commands", len(r.mu.proposals))
 		return false
 	}
@@ -3831,24 +3831,24 @@ func (r *Replica) tick() (bool, error) {
 // maybeTickQuiesced attempts to tick a quiesced or dormant replica, returning
 // true on success and false if the regular tick path must be taken
 // (i.e. Replica.tick).
-func (r *Replica) maybeTickQuiesced() bool {
+func (r *Replica) maybeTickQuiesced() bool {//DHQ: 注意这个是Replica的函数，不是store。每个单独判断
 	var done bool
 	r.mu.Lock()
 	if r.mu.internalRaftGroup == nil {
 		done = true
-	} else if r.mu.quiescent {//DHQ: 这个是raft进程间的协议，我么应该也可以quiescent。PD的交互不好改。
+	} else if r.mu.quiescent {//DHQ: 这个是raft进程间的协议，我们应该也可以quiescent。PD的交互不好改。
 		done = true
 		if !enablePreVote {
 			// NB: It is safe to call TickQuiesced without holding Replica.raftMu
 			// because that method simply increments a counter without performing any
 			// other logic.
-			r.mu.internalRaftGroup.TickQuiesced()
+			r.mu.internalRaftGroup.TickQuiesced()//DHQ: 这个是RawNode的函数。但是上面的 quiescent 的赋值才是关键
 		}
 	}
 	r.mu.Unlock()
 	return done
 }
-
+//DHQ: Quiesce的逻辑原理
 // maybeQuiesceLocked checks to see if the replica is quiescable and initiates
 // quiescence if it is. Returns true if the replica has been quiesced and false
 // otherwise.
